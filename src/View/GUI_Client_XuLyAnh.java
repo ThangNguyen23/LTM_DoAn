@@ -47,9 +47,10 @@ public class GUI_Client_XuLyAnh extends JFrame {
 	private String extension = "null";
 	private JLabel image;
 	private Model_Image model_image = new Model_Image();
-	//private Controller_Client_SearchPhim controll ;
+	private Controller_Client_SearchPhim controll ;
 	public static boolean flag_detec = false;
 	public static String stringdetec = "";
+	public boolean click = false;
 	/**
 	 * Launch the application.
 	 */
@@ -85,6 +86,7 @@ public class GUI_Client_XuLyAnh extends JFrame {
 	 * Create the frame.
 	 */
 	public GUI_Client_XuLyAnh() {
+		model_image.buffered = null;
 //		controll= new Controller_Client_SearchPhim();
 //		controll.Open_Client("localhost", 6000);
 //		controll.send_text("anh");
@@ -265,7 +267,7 @@ public class GUI_Client_XuLyAnh extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				JFileChooser file = new JFileChooser();
-				file.setFileSelectionMode(JFileChooser.FILES_ONLY);
+				//file.setFileSelectionMode(JFileChooser.FILES_ONLY);
 				file.setAcceptAllFileFilterUsed(false);
 				//Cách 1 : Filter những định dạng ảnh
 				file.setFileFilter(new FileFilter() {			
@@ -300,6 +302,7 @@ public class GUI_Client_XuLyAnh extends JFrame {
 		            String filename = file.getSelectedFile().getName();
 		            String dir = file.getCurrentDirectory().toString();
 		            path = dir+"\\"+filename;		//Get path ảnh
+		            
 		            StringTokenizer token = new StringTokenizer(path,".",false);
 		            token.nextToken();
 		            extension = token.nextToken();	//Get đuôi ảnh
@@ -310,7 +313,7 @@ public class GUI_Client_XuLyAnh extends JFrame {
 						Image dimg = temp2.getScaledInstance(image.getWidth(), image.getHeight(),
 							        Image.SCALE_SMOOTH);
 						image.setIcon(new ImageIcon(dimg));
-						System.out.println("path:"+path);
+					
 					} catch (IOException e1) {
 						e1.printStackTrace();
 					}		           
@@ -328,7 +331,12 @@ public class GUI_Client_XuLyAnh extends JFrame {
 	public void Function_Compress() {
 		compress.addActionListener(new ActionListener() {		
 			@Override
-			public void actionPerformed(ActionEvent e) {				
+			public void actionPerformed(ActionEvent e) {	
+				if(click==true)
+				{
+					JOptionPane.showMessageDialog(null,"Lỗi!Vui lòng lưu ảnh trước!","Lỗi",JOptionPane.CANCEL_OPTION);
+					return;
+				}
 				//Check đã upload ảnh chưa
 				if(path.equals("null"))
 				{
@@ -344,17 +352,21 @@ public class GUI_Client_XuLyAnh extends JFrame {
 				MainView.controller.send_text("compress");
 				MainView.controller.send_text("null");
 				MainView.controller.send_text(extension);
+		
 				//nhận từ server
 				Model_Image result = MainView.controller.Receive_Image();
+
 				if(result == null)
 				{
 					JOptionPane.showMessageDialog(null,"Lỗi!Ảnh không thể chuyển!","Lỗi",JOptionPane.CANCEL_OPTION);
 					return;
 				}				 
+				model_image.buffered = null;
 				model_image.buffered = result.buffered; //Lưu ảnh vào biến toàn cục để lưu ảnh nếu có
 				Image dimg = result.buffered.getScaledInstance(image.getWidth(), image.getHeight(),
 					        Image.SCALE_SMOOTH);
-				image.setIcon(new ImageIcon(dimg));		           
+				image.setIcon(new ImageIcon(dimg));		
+				click = true;				     
 			}
 		});
 	}
@@ -363,9 +375,14 @@ public class GUI_Client_XuLyAnh extends JFrame {
 	public void Function_Format() {
 		format.addActionListener(new ActionListener() {		
 			@Override
-			public void actionPerformed(ActionEvent e) {				
+			public void actionPerformed(ActionEvent e) {
+				if(click==true)
+				{
+					JOptionPane.showMessageDialog(null,"Lỗi!Vui lòng lưu ảnh trước!","Lỗi",JOptionPane.CANCEL_OPTION);
+					return;
+				}
 				//Check đã upload ảnh chưa
-				image.setIcon(null);
+				
 				if(path.equals("null"))
 				{
 					JOptionPane.showMessageDialog(null,"Lỗi!Vui lòng upload ảnh!","Lỗi",JOptionPane.CANCEL_OPTION);
@@ -374,8 +391,9 @@ public class GUI_Client_XuLyAnh extends JFrame {
 				Object[] option = {"PNG","JPG","TIF","GIF"};
 				int choose = JOptionPane.showOptionDialog(null,"Chọn định dạng ảnh","Định dạng", 
 						JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, option, null);
-				
-				
+				if(choose == -1)
+					return;
+				System.out.println("lựa chọn"+choose);
 				//Tạo model ảnh để lưu trữ dữ liệu + các hàm chuyển đổi ảnh
 				Model_Image object = new  Model_Image();				
 				object.path = path;
@@ -383,11 +401,13 @@ public class GUI_Client_XuLyAnh extends JFrame {
 				//Gửi đến server theo định dạng : data - chức năng - saveas(dành cho format) - đuôi extension hiện tại
 				MainView.controller.send_text(send);//
 				MainView.controller.send_text("format");//
+
 				if (choose==0) MainView.controller.send_text("png");
 				if (choose==1) MainView.controller.send_text("jpg");
 				if (choose==2) MainView.controller.send_text("tif");
 				if (choose==3) MainView.controller.send_text("gif");
 				MainView.controller.send_text(extension);
+
 				//nhận từ server
 				Model_Image result = MainView.controller.Receive_Image();
 				if(result == null)
@@ -396,9 +416,12 @@ public class GUI_Client_XuLyAnh extends JFrame {
 					return;
 				}				 
 				model_image.buffered = result.buffered;	//Lưu ảnh vào biến toàn cục để lưu ảnh
+				extension = result.extension;
 				Image dimg = result.buffered.getScaledInstance(image.getWidth(), image.getHeight(),
 					        Image.SCALE_SMOOTH);
-				image.setIcon(new ImageIcon(dimg));		           
+				image.setIcon(new ImageIcon(dimg));
+				click = true;
+				
 			}
 		});		
 	}
@@ -407,8 +430,13 @@ public class GUI_Client_XuLyAnh extends JFrame {
 	public void Function_Gray() {
 		gray.addActionListener(new ActionListener() {		
 			@Override
-			public void actionPerformed(ActionEvent e) {	
-				image.setIcon(null);
+			public void actionPerformed(ActionEvent e) {				
+				if(click==true)
+				{
+					JOptionPane.showMessageDialog(null,"Lỗi!Vui lòng lưu ảnh trước!","Lỗi",JOptionPane.CANCEL_OPTION);
+					return;
+				}
+//				
 				//Check đã upload ảnh chưa
 				if(path.equals("null"))
 				{
@@ -431,10 +459,12 @@ public class GUI_Client_XuLyAnh extends JFrame {
 					JOptionPane.showMessageDialog(null,"Lỗi!Ảnh không thể chuyển!","Lỗi",JOptionPane.CANCEL_OPTION);
 					return;
 				}		
+				model_image.buffered = null;
 				model_image.buffered = result.buffered;	//Như trên - lưu biến toàn cục
 				Image dimg = result.buffered.getScaledInstance(image.getWidth(), image.getHeight(),
 					        Image.SCALE_SMOOTH);
-				image.setIcon(new ImageIcon(dimg));		           
+				image.setIcon(new ImageIcon(dimg));		  
+				click = true;
 			}
 		});
 	}
@@ -443,9 +473,14 @@ public class GUI_Client_XuLyAnh extends JFrame {
 	public void Function_Resize() {
 		resize.addActionListener(new ActionListener() {		
 			@Override
-			public void actionPerformed(ActionEvent e) {				
+			public void actionPerformed(ActionEvent e) {	
+				if(click==true)
+				{
+					JOptionPane.showMessageDialog(null,"Lỗi!Vui lòng lưu ảnh trước!","Lỗi",JOptionPane.CANCEL_OPTION);
+					return;
+				}
 				//Check đã upload ảnh chưa
-				image.setIcon(null);
+
 				if(path.equals("null"))
 				{
 					JOptionPane.showMessageDialog(null,"Lỗi!Vui lòng upload ảnh!","Lỗi",JOptionPane.CANCEL_OPTION);
@@ -454,7 +489,8 @@ public class GUI_Client_XuLyAnh extends JFrame {
 				Object[] option = {"Small","Medium","Large"};
 				int choose = JOptionPane.showOptionDialog(null,"Chọn định dạng ảnh","Định dạng", 
 						JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, option, null);				
-				
+				if(choose == -1)
+					return;		
 				//Tạo model ảnh để lưu trữ dữ liệu + các hàm chuyển đổi ảnh
 				Model_Image object = new  Model_Image();				
 				object.path = path;
@@ -465,7 +501,7 @@ public class GUI_Client_XuLyAnh extends JFrame {
 				if (choose==0) MainView.controller.send_text("small");
 				if (choose==1) MainView.controller.send_text("medium");
 				if (choose==2) MainView.controller.send_text("large");				
-				MainView.controller.send_text(extension);
+				MainView.controller.send_text(extension);				
 				//nhận từ server
 				Model_Image result = MainView.controller.Receive_Image();
 				if(result == null)
@@ -476,7 +512,8 @@ public class GUI_Client_XuLyAnh extends JFrame {
 				model_image.buffered = result.buffered;
 				Image dimg = result.buffered.getScaledInstance(image.getWidth(), image.getHeight(),
 					        Image.SCALE_SMOOTH);
-				image.setIcon(new ImageIcon(dimg));		           
+				image.setIcon(new ImageIcon(dimg));	
+				click = true;
 			}
 		});		
 	}
@@ -486,6 +523,11 @@ public class GUI_Client_XuLyAnh extends JFrame {
 		save.addActionListener(new ActionListener() {			
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				if(model_image.buffered == null)
+				{
+					JOptionPane.showMessageDialog(null,"Lỗi, Vui lòng thực hiện chức năng rồi mới lưu ảnh","Lỗi",JOptionPane.CANCEL_OPTION);
+					return;
+				}
 				JFileChooser file = new JFileChooser();
 														        		
 				int rVal = file.showSaveDialog(null);
@@ -503,12 +545,10 @@ public class GUI_Client_XuLyAnh extends JFrame {
 					} catch (IOException e1) {						
 					} 
 				    image.setIcon(null);
-		        }
-		        else
-		        {
-		        	path = "null";
-		        	System.out.println("not accept");
-		        }				
+				    path = "null";
+				    JOptionPane.showMessageDialog(null, "Đã lưu ảnh", "Thành công",JOptionPane.CANCEL_OPTION);
+				    click = false;
+		        }				        
 			}
 		});
 	}
@@ -540,7 +580,7 @@ public class GUI_Client_XuLyAnh extends JFrame {
 				MainView.controller.send_text("api");
 				MainView.controller.send_text("null");
 				MainView.controller.send_text("null");
-				ArrayList<Model_Image> result = MainView.controller.Receive_API();
+				ArrayList<Model_Image> result = MainView.controller.Receive_API();				
 				if(result == null)
 				{
 					JOptionPane.showMessageDialog(null,"Lỗi!Ảnh không thể chuyển!","Lỗi",JOptionPane.CANCEL_OPTION);
